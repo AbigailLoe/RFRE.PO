@@ -197,6 +197,7 @@ formatTt <- function(R_star, L, n , t) {
   ))
 }
 
+# create pseudo-values!
 
 myPseudo = function(dat = data_long, tau ){
   rowVecCheck = NULL
