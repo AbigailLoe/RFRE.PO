@@ -7,8 +7,6 @@ m = 10
 set.seed(16)
 
 
-source("~/Dropbox (University of Michigan)/LLZ/Simulation/broken_LM/internalFxns.R")
-
 # need to do a 70/30 split for all of the datasets
 hrf.param2 = hrf.param = hrf.se = hrf.se2 =
   summer.param = summer.vcov =wald.param = wald.vcov=
