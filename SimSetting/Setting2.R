@@ -1,7 +1,11 @@
+#########################################################
+# for analyzing the simulation performance
+#########################################################
+
 pacman::p_load(dplyr, tidyr, pseudo, geepack, survival,
                 htree, ggplot2, tidymodels, parsnip,
                 rsample, xtable, ranger, ggsurvfit,
-                parallelly)
+                parallelly, Hmisc)
 
 
 #setwd("~/Dropbox (University of Michigan)/LLZ/Simulation/broken_LM")
@@ -14,28 +18,11 @@ Sys.setenv(R_PARALLELLY_RANDOM_PORTS = "10000:39999")
 
 source("Generate_Data_Setting_2.R")
 source("internalFxns.R")
-source("newBias.R")
-
-
-
-
-
-
-
-
 ##### Set-Up ####
-predC = as.data.frame(matrix(NA, nrow = 1, ncol = 6))
-# poToActual = as.data.frame(matrix(NA, nrow = 1, ncol = 1))
-# predToActual = as.data.frame(matrix(NA, nrow = 1, ncol = 3))
-# names(predC)= names(predToActual)= c("magic", "hrf", "naive")
-# meanBias =  as.data.frame(matrix(NA, nrow = 1, ncol = 3))
-names(predC)= c("magicHist", "magicNoHist", "hrfHist", "hrfNoHist",  "naiveHist", "naiveNoHist")
-
-
-
+predC = as.data.frame(matrix(NA, nrow = 1, ncol = 9))
 
 settings = NULL
-
+# this is for cluster environment set up.
 alpha = as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 p.censoring = as.numeric(Sys.getenv("p_censoring"))
 correl = as.numeric(Sys.getenv("correl"))
@@ -184,47 +171,53 @@ data_package = gen.data(study_length = study_length.set,
   
   
   finalPredictions = as.data.frame(predList)
-  
+
+rcorr.cens(currPred, Surv(data$calTime - data$marker, data$delta))
+
+
   print("calculating c...")
   #order is true, hrf, naive
+my.surv.obj = Surv(data$calTime - data$marker, data$delta)
   # true:
-  m1 = c_censored(predicted = finalPredictions$magicHist, 
-                    calTime = data$calTime-data$marker, 
-                    observed = data$delta); m1
-m2 = c_censored(predicted = finalPredictions$magicNoHist, 
-                    calTime = data$calTime-data$marker, 
-                    observed = data$delta); m2
-# m3 = c_censored(predicted = finalPredictions$magicImpute, 
-#                     calTime = data$calTime-data$marker, 
-#                     observed = data$delta); m3
-                    
-  h1 = c_censored(predicted = finalPredictions$hrfHistory,
-                    calTime = data$calTime - data$marker,
-                    observed = data$delta); h1
-h2 = c_censored(predicted = finalPredictions$hrfNoHistory,
-                    calTime = data$calTime - data$marker,
-                    observed = data$delta); h2
-# h3 = c_censored(predicted = finalPredictions$hrfImpute,
-#                     calTime = data$calTime - data$marker,
-#                     observed = data$delta); h3
-  n1 = c_censored(predicted = finalPredictions$naiveHist, 
-                    calTime = data$calTime-data$marker, 
-                    observed = data$delta); n1
-  n2 = c_censored(predicted = finalPredictions$naiveNoHist, 
-                    calTime = data$calTime-data$marker, 
-                    observed = data$delta); n2  
-#   n3 = c_censored(predicted = finalPredictions$naiveImpute, 
-#                     calTime = data$calTime-data$marker, 
-#                     observed = data$delta); n3                       
+  m1 = rcorr.cens(finalPredictions$magicHist, 
+                  my.surv.obj)
 
-  predC[1, ] = c(m1, m2, h1, h2, n1, n2)
+m2 = rcorr.cens(finalPredictions$magicNoHist, 
+                  my.surv.obj)
+# here, we are concerned with mean behavior, so while one could possibly
+# impute and average, we found little difference in simulation between imputations
+# with m= 10, and a sinlge partial history case. code should be modified here
+# to deal with the partial history case.
+
+m3 = rcorr.cens(finalPredictions$magicImpute, 
+                  my.surv.obj); m3
+                    
+h1 = rcorr.cens(finalPredictions$hrfHistory, 
+                  my.surv.obj); h1
+h2 = rcorr.cens(finalPredictions$hrfNoHistory, 
+                  my.surv.obj); h2
+
+h3 = rcorr.cens(finalPredictions$hrfImpute, 
+                  my.surv.obj); h3
+n1 = rcorr.cens(finalPredictions$naiveHist, 
+                  my.surv.obj); n1
+
+n2 = rcorr.cens(finalPredictions$naiveNoHist, 
+                  my.surv.obj); n2
+ 
+n3 = rcorr.cens(finalPredictions$naiveImpute, 
+                  my.surv.obj); n3                   
+
+  predC[1, ] = c(m1, m2, m3, h1, h2, h3, n1, n2, n3)
     print(predC)
   
 
 
 resultDataFrame = NULL
 resultDataFrame = cbind.data.frame(predC)
-names(resultDataFrame) = c("magicHist", "magicNoHist",  "hrfHist", "hrfNoHist",  "naiveHist", "naiveNoHist")
+names(resultDataFrame) = c("magicHist", "magicNoHist","magicImpute", 
+                           "hrfHist", "hrfNoHist", "hrfImpute",
+                           "naiveHist", "naiveNoHist", "naiveImpute")
 
 r_data_path=paste0("r_data/", p.censoring ,"/" , correl, "/")
 if(!file.exists(r_data_path))
