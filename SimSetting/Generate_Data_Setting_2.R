@@ -1,17 +1,6 @@
-# this file lives in broken_lm
-
-
-####3 for local debugging/changning #######
-
-# study_length = study_length.set
-# space = space.set
-# window = window.set
-# num_covs = num_covs.set
-# study_size = study_size.set
-# p.censoring = p.censoring.set
-# correl = correl.set
-# estimand =estimand.set
-# discard_excess = discard_excess.set
+#########################################################
+# A file for generating the data necessary for simulation
+#########################################################
 
 pacman:: p_load(foreach, doParallel,
                 tidyr, dplyr,
@@ -21,6 +10,7 @@ pacman:: p_load(foreach, doParallel,
 
 source("internalFxns.R")
 
+# a function to generate the recurrent event data necessary for simulation.
 gen.data = function(study_length = 5,
                     space = 1/2, window = 1,
                     num_covs = 7,
@@ -33,9 +23,7 @@ gen.data = function(study_length = 5,
   checks = seq(from = 0, to = study_length-window, by = space)
   
   b = length(checks)
-  l_m = gen6(prelimN) #setting 2 in paper
-  # l_m = restrictS1(prelimN, numcovs = num_covs, 1/8, 5) #setting 1 in paper, setting 1 in names
-  print("lambdas generated")
+  l_m = gen6(prelimN) # data generation mechanism.
   
   lambdas = l_m[,"lambda"]
   length(lambdas)
@@ -43,7 +31,7 @@ gen.data = function(study_length = 5,
   range(1/lambdas)
   covs = l_m[, - which(names(l_m)=="lambda")] #assumes lambdas at end!!!!
 
-  # Problem has to be here???
+  # get the recurrent event calendar times.
   foo = gen_R_star(lambdas = lambdas, 
                    correl= correl, 
                    study_size = prelimN, 
@@ -51,7 +39,8 @@ gen.data = function(study_length = 5,
                    discard_excess = discard_excess,
                    covs = covs,
                    space = space)
-  # now we have roughly 2 times as many R_star as we need.
+  # now we have roughly 2 times as many R_star as we need; this is necessary for 
+  # highly correlated cases.
   
   R_star=foo$R_star
   covs = foo$covs
@@ -80,8 +69,7 @@ gen.data = function(study_length = 5,
     L = rexp(study_size, p.censoring) 
     L[L > study_length] = study_length
   }
-  # need to manipulate R_star and the censoring times to get the first event beyond
-  # censor time.
+
   
   extendedTime[extendedTime<L] = NA
 
@@ -90,17 +78,9 @@ gen.data = function(study_length = 5,
   print("number of events before second window:")
   print((table(rowSums2(R_star<space, na.rm = TRUE))))
   maxEvent = cbind.data.frame(ID= 1:study_size, nextEvent=rowSums2(R_star<space, na.rm = TRUE)+1)
-  
-  # as.numeric(max(names(table(rowSums2(R_star<space, na.rm = TRUE)))))+1
 
-  if(estimand==1){
-    T_t_format = get_min_T_tau_wloss(R_star, L, study_size, b, window, checks)
-    data_long = genRMST(min_T_tau = T_t_format$min_T_tau, 
-                      study_size = study_size, covariateMat = covs, 
-                      censorTime = L, status= T_t_format$delta, numWindows= b,
-                      checks= checks, 
-                      tau = window)
-  } else{
+
+ {
     T_t_format = formatTt(R_star = R_star, L= L, 
                           n = study_size, t = checks)
     
@@ -108,24 +88,21 @@ gen.data = function(study_length = 5,
     for(i in 1:length(checks)){
       tT[,i] = tT[,i]+checks[i]
     }
-    # View(cbind(1/generatingLambdas, tT))  #There does not seem to be much
-    # relationship between the generating lambdas and the event times, even
-    # when there is little correlation!!
-    # print((empiricalCorrelation(tT)))
-    #real correlation is higher than induced correlation. as expected.
-    # but not bananas high.
-    
+
+   # get the window start times.
+   
     data_long=gen_Sliding(tList = T_t_format,
                           covMat= covs,
                           censorTime = L,
                           checks = checks,
                           numcovs = num_covs)
-    #final check of delta values.
+    
+   #final check of delta values.
     data_long = data_long %>% 
         mutate(delta = as.numeric(!near(calTime, L))) 
 
 
-    # this is the correct time.
+    # get pseudo observations.
     interim = myPseudo(dat = data_long, tau = window)
     
     data_long = interim[["returnedData"]]
@@ -133,11 +110,6 @@ gen.data = function(study_length = 5,
     
       
     data_long = data_long %>% na.omit()
-    # 
-    # prop.table(table(data_long$timeToEvent< window))
-    # hist(data_long$timeToEvent[data_long$marker==0])
-    # hist(data_long$pseudoEst)
-    # # prop.table(table(data_long$pseudoEst < .2))
     
     avgLambda = 1/mean(lambdas)
     
@@ -156,7 +128,6 @@ gen.data = function(study_length = 5,
                                          space), #take the min of a and the imputed variable
         avg_exacerb_impute =lag(cummean(timeToEventImpute))) %>%
       na.omit()
-      # dplyr::select(-timeToEventImpute)
     
     prev_event_df = cbind.data.frame(ID = 1:study_size, prev_event)
     
@@ -188,9 +159,4 @@ gen.data = function(study_length = 5,
               nextEvent = maxEvent
               ))
 }
-
-#View(dat3[censoredRows, c( "delta", "nextEvent", "marker", "timeToEvent")])
-#c_stat(dat3$timeToEvent, dat3$pseudoEst)
-#goal: to create a histogram based on pseudovals. that's our risk score.
-#Our idea of overlap of distributions is completely different.
 
