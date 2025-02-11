@@ -1,0 +1,13 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.git$
+^\.gitignore$
+^README\.md$
+^renv\.lock$
+^renv$
+^\.github$
+^docs$
+^tests/testthat\\.R$
+^tests/testthat$
+^vignettes$
+^\.devcontainer$

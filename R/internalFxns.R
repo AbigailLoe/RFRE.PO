@@ -1,4 +1,4 @@
-pacman::p_load(matrixStats, dplyr, tidyr, LaplacesDemon)
+# pacman::p_load(matrixStats, dplyr, tidyr, LaplacesDemon)
 
 #Generate recurrent events with gap times ~ Exp(lambda_i)
 #lambda_i can be a vector or scalar

@@ -1,0 +1,31 @@
+Type: Package
+Package: RFRE.PO
+Title: Short Title
+Version: 0.1.0.0
+Authors@R: c(
+    person("Abby", "Loe", , "agloe@umich.edu", role = c("aut", "cre"))
+  )
+Description: Data application and analysis of the Azithromycin for the Prevention 
+    of COPD Cohort of Loe et al. <doi:10.400000/arXiv.2000.00000>.
+License: GPL (>= 2)
+URL: https://github.com/AbigailLoe/RFRE.PO
+BugReports: https://github.com/AbigailLoe/RFRE.PO/issues
+Depends:
+    R (>= 4.0.0)
+Imports:
+    dplyr, 
+    tidyr, 
+    htree, 
+    geepack, 
+    stats, 
+    miceadds, 
+    xtable, 
+    Hmisc, 
+    viridisLite, 
+    survival,
+    matrixStats, 
+    LaplacesDemon
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
