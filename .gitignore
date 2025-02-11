@@ -1,0 +1,36 @@
+# R and RStudio files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.Rapp.history
+*.Rproj
+
+# Compiled files
+*.o
+*.so
+*.dll
+
+# Package build files
+*.tar.gz
+*.Rcheck/
+
+# Dependencies
+renv.lock
+renv/
+
+# Logs and temp files
+*.log
+*.out
+*.aux
+*.tmp
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Git & R metadata
+*.lock
+*.sqlite
